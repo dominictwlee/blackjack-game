@@ -1,18 +1,17 @@
 //  Card Variables
-let suits = ['Hearts', 'Clubs', 'Diamonds', 'Spades'];
-let values = [
+const suits = ['Hearts', 'Clubs', 'Diamonds', 'Spades'];
+const values = [
   '2', '3', '4', '5', '6', '7',
   '8', '9', '10', 'J', 'Q', 'K', 'A'
 ];
 
-//DOM Variables
-let startBtn = document.querySelector('#start');
-let hitBtn = document.querySelector('#hit');
-let stayBtn = document.querySelector('#stay');
-let message = document.querySelector('#message');
-let scoreDisplay = document.querySelector('#scoreDisplay');
-let playerCards = document.querySelector('#playerCards');
-let dealerCards = document.querySelector('#dealerCards');
+const startBtn = document.querySelector('#start');
+const hitBtn = document.querySelector('#hit');
+const stayBtn = document.querySelector('#stay');
+const message = document.querySelector('#message');
+const scoreDisplay = document.querySelector('#scoreDisplay');
+const playerCardUi = document.querySelector('#playerCards');
+const dealerCardUi = document.querySelector('#dealerCards');
 
 let deck = [];
 let playerHand = [];
@@ -26,7 +25,6 @@ hitBtn.style.display = 'none';
 stayBtn.style.display = 'none';
 
 //  Update Scores
-
 function tallyScore(hand) {
   let sum = 0;
   let hasAce = false;
@@ -45,6 +43,13 @@ function tallyScore(hand) {
 function updateScores() {
   playerScore = tallyScore(playerHand);
   dealerScore = tallyScore(dealerHand);
+}
+
+function updateDisplays() {
+  scoreDisplay.textContent = `Total Player Points: ${playerScore}`;
+  dealerDisplay.textContent = `Total Dealer Points: ${dealerScore}`;
+  displayCards(playerCardUi, playerHand);
+  displayCards(dealerCardUi, dealerHand);
 }
 
 //  Build Deck Of Cards
@@ -96,58 +101,79 @@ function getNextCard(deck, hand) {
 
 function checkForEnd() {
   if (playerScore === 21) {
-    message.textContent = 'You Win!';
+    gameOver = true;
+    playerWon = true;
+  }
+  else if (dealerScore === 21) {
+    gameOver = true;
+    playerWon = false;
   }
   else {
+    /*  A set of rules for dealer to follow when player
+    is finished with his turn */
     if (gameOver) {
       while (dealerScore < 17) {
         getNextCard(deck, dealerHand);
         updateScores();
-        showCards(dealerCards, dealerHand)
-        dealerDisplay.textContent = `Total Dealer Points: ${dealerScore}`;
+        updateDisplays();
       }
     }
+    // Different message triggered depending on which conditions prevail
     if (playerScore > 21) {
       gameOver = true;
-      message.textContent = 'You Lose!';
-      hitBtn.style.display = 'none';
-      stayBtn.style.display = 'none';
+      playerWon = false;
     }
     else if (dealerScore > 21) {
       gameOver = true;
-      message.textContent = 'You Win!';
-      hitBtn.style.display = 'none';
-      stayBtn.style.display = 'none';
+      playerWon = true;
     }
     else if (gameOver) {
-      if (playerScore > dealerScore || playerScore === 21) {
-        message.textContent = 'You Win!';
+      if (playerScore > dealerScore) {
+        gameOver = true;
+        playerWon = true;
       }
       else {
-        message.textContent = 'You Lose!';
+        gameOver = true;
+        playerWon = false;
       }
     }
   }
+  if (gameOver && playerWon) {
+    hitBtn.style.display = 'none';
+    stayBtn.style.display = 'none';
+    startBtn.textContent = 'Restart';
+    message.textContent = 'You Win!';
+  }
+  if (gameOver && playerWon!==true) {
+    hitBtn.style.display = 'none';
+    stayBtn.style.display = 'none';
+    startBtn.textContent = 'Restart';
+    message.textContent = 'You lose!';
+  }
 }
 
-function showCards(showCards, hand) {
-  showCards.innerHTML = '';
+function displayCards(cardUi, hand) {
+  cardUi.innerHTML = '';
   hand.forEach((card) => {
     let el = document.createElement('div');
     el.className = 'card';
     el.innerHTML = `<p>${card.Value} of ${card.Suit}</p>`;
-    showCards.appendChild(el);
+    cardUi.appendChild(el);
   })
-
 }
 
-function newGame() {
+function reset() {
+  startBtn.textContent = 'Start';
   gameOver = false;
   playerWon = false;
   message.innerHTML = '';
   deck.splice(0, deck.length);
   playerHand.splice(0, playerHand.length);
   dealerHand.splice(0, dealerHand.length);
+}
+//  Button Functions
+function newGame() {
+  reset();
   buildDeck(deck);
   shuffle(deck);
   for (let i = 0; i < 2; i++) {
@@ -155,23 +181,17 @@ function newGame() {
     getNextCard(deck, playerHand);
   }
   updateScores();
-  checkForEnd();
-  scoreDisplay.textContent = `Total Player Points: ${playerScore}`;
-  dealerDisplay.textContent = `Total Dealer Points: ${dealerScore}`;
-  showCards(playerCards, playerHand);
-  showCards(dealerCards, dealerHand);
+  updateDisplays();
   hitBtn.style.display = 'inline';
   stayBtn.style.display = 'inline';
+  checkForEnd();
 }
 
 function hit() {
   playerCards.innerHTML = '';
   getNextCard(deck, playerHand);
   updateScores();
-  scoreDisplay.textContent = `Total Player Points: ${playerScore}`;
-  dealerDisplay.textContent = `Total Dealer Points: ${dealerScore}`;
-  showCards(playerCards, playerHand);
-
+  updateDisplays();
   checkForEnd();
 }
 
@@ -183,16 +203,10 @@ function stay() {
 //  Listeners
 startBtn.addEventListener('click', () => {
   newGame();
-  console.log(playerHand);
-  console.log(dealerHand);
-  console.log(deck);
 });
 
 hitBtn.addEventListener('click', () => {
   hit();
-  console.log(deck);
-  console.log(playerHand);
-  console.log(dealerHand);
 })
 
 stayBtn.addEventListener('click', () => {
